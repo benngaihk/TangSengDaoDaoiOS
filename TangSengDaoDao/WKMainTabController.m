@@ -12,6 +12,7 @@
 #import "WKConversationListVC.h"
 #import "WKContactsVC.h"
 #import "WKMeVC.h"
+#import <WuKongWorkplace/WuKongWorkplace.h>
 @interface WKMainTabController ()<UITabBarControllerDelegate>
 
 @property(nonatomic,strong) LOTAnimationView *currentLOTAnimationView;
@@ -38,6 +39,7 @@
    
     [self setupChildVC:WKConversationListVC.class title:@"" andImage:@"HomeTab" andSelectImage:@"HomeTabSelected"];
     [self setupChildVC:WKContactsVC.class title:@"" andImage:@"ContactsTab" andSelectImage:@"ContactsTabSelected"];
+    [self setupChildVC:WKWorkplaceVC.class title:@"" andImage:@"ContactsTab" andSelectImage:@"ContactsTabSelected"];
     [self setupChildVC:WKMeVC.class title:@"" andImage:@"MeTab" andSelectImage:@"MeTabSelected"];
 
 }

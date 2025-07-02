@@ -121,6 +121,12 @@ PODS:
     - PromiseKit/CorePromise (~> 6.0)
     - SDWebImage (~> 5.9.1)
     - WuKongBase
+  - WuKongWorkplace (0.1.0):
+    - AFNetworking
+    - Masonry
+    - PromiseKit/CorePromise (~> 6.0)
+    - SDWebImage (~> 5.9.1)
+    - WuKongBase
   - YBImageBrowser/NOSD (3.0.9):
     - YYImage
   - YYImage (1.0.4):
@@ -148,6 +154,7 @@ DEPENDENCIES:
   - WuKongDataSource (from `./Modules/WuKongDataSource`)
   - WuKongIMSDK (from `./Modules/WuKongIMiOSSDK`)
   - WuKongLogin (from `./Modules/WuKongLogin`)
+  - WuKongWorkplace (from `./Modules/WuKongWorkplace`)
   - YBImageBrowser/NOSD (from `https://github.com/tangtaoit/YBImageBrowser.git`)
   - YYImage/WebP (from `https://github.com/tangtaoit/YYImage.git`)
 
@@ -201,6 +208,8 @@ EXTERNAL SOURCES:
     :path: "./Modules/WuKongIMiOSSDK"
   WuKongLogin:
     :path: "./Modules/WuKongLogin"
+  WuKongWorkplace:
+    :path: "./Modules/WuKongWorkplace"
   YBImageBrowser:
     :git: https://github.com/tangtaoit/YBImageBrowser.git
   YYImage:
@@ -258,11 +267,12 @@ SPEC CHECKSUMS:
   WuKongDataSource: 46cf01983c85d1134ae19c13700928d8a980d789
   WuKongIMSDK: 9c93f5e5e5038e0f11618cb1f87c85c09edcca79
   WuKongLogin: aafe2112c28e7c69d8ba987bb05d374214a428b1
+  WuKongWorkplace: a42ad983564ed8bdf94d0a327b2ef53e01554a46
   YBImageBrowser: 7ecc8bf33ffa5f3b94c397c29b4f3638dd37f527
   YYImage: 6db68da66f20d9f169ceb94dfb9947c3867b9665
   ZLImageEditor: ee86f044fb7c5dec6b5de49eb7bb6fd42286f2ae
   ZLPhotoBrowser: 6fb0eff03c8269001e29ef233e7bdab0691e05fe
 
-PODFILE CHECKSUM: 8f3d987a251697eb20ae68cfc22750d44234e37b
+PODFILE CHECKSUM: f235fd3269e3d52f76bef2928181d01bf8f0473b
 
 COCOAPODS: 1.16.2
