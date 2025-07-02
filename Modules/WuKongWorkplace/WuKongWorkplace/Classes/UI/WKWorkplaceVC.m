@@ -137,7 +137,7 @@
 
 - (void)setupUI {
     self.view.backgroundColor = [UIColor whiteColor];
-    self.title = @"工作台";
+    self.title = @"";
     
     // 创建滚动视图
     self.scrollView = [[UIScrollView alloc] init];

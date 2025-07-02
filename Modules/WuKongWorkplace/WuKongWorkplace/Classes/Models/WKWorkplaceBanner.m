@@ -13,7 +13,16 @@
     WKWorkplaceBanner *banner = [WKWorkplaceBanner new];
     if (dictory) {
         banner.bannerNo = dictory[@"banner_no"] ?: @"";
-        banner.cover = dictory[@"cover"] ?: @"";
+        
+        // 处理封面图URL，如果是相对路径则拼接完整URL
+        NSString *coverPath = dictory[@"cover"] ?: @"";
+        if (coverPath.length > 0 && ![coverPath hasPrefix:@"http"]) {
+            // 相对路径，需要拼接baseURL
+            banner.cover = [NSString stringWithFormat:@"%@%@", [WKApp shared].config.apiBaseUrl, coverPath];
+        } else {
+            banner.cover = coverPath;
+        }
+        
         banner.title = dictory[@"title"] ?: @"";
         banner.bannerDescription = dictory[@"description"] ?: @"";
         banner.jumpType = [dictory[@"jump_type"] integerValue];

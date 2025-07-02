@@ -28,8 +28,17 @@
 #pragma mark - 首页数据
 
 - (AnyPromise *)loadHomeData {
-    // 简化：只返回应用数据
-    return [[WKWorkplaceAPI sharedInstance] getUserApps];
+    // 先获取应用数据，横幅数据暂时返回空数组（可后续扩展）
+    return [[WKWorkplaceAPI sharedInstance] getUserApps].then(^(NSArray *apps) {
+        // 可以在这里添加获取横幅的逻辑
+        // 暂时返回空横幅数组
+        NSArray *banners = @[];
+        
+        return @{
+            @"banners": banners,
+            @"apps": apps ?: @[]
+        };
+    });
 }
 
 #pragma mark - 应用管理

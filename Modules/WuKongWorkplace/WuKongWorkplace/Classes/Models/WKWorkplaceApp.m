@@ -14,7 +14,16 @@
     if (dictory) {
         app.appId = dictory[@"app_id"] ?: @"";
         app.sortNum = [dictory[@"sort_num"] integerValue];
-        app.icon = dictory[@"icon"] ?: @"";
+        
+        // 处理图标URL，如果是相对路径则拼接完整URL
+        NSString *iconPath = dictory[@"icon"] ?: @"";
+        if (iconPath.length > 0 && ![iconPath hasPrefix:@"http"]) {
+            // 相对路径，需要拼接baseURL
+            app.icon = [NSString stringWithFormat:@"%@%@", [WKApp shared].config.apiBaseUrl, iconPath];
+        } else {
+            app.icon = iconPath;
+        }
+        
         app.name = dictory[@"name"] ?: @"";
         app.appDescription = dictory[@"description"] ?: @"";
         app.appCategory = dictory[@"app_category"] ?: @"";
