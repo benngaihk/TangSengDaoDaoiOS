@@ -35,28 +35,70 @@
 #pragma mark - UI Setup
 
 - (void)setupUI {
-    self.view.backgroundColor = [UIColor whiteColor];
+    // 使用系统背景色支持深色模式
+    if (@available(iOS 13.0, *)) {
+        self.view.backgroundColor = [UIColor systemGroupedBackgroundColor];
+    } else {
+        self.view.backgroundColor = [UIColor groupTableViewBackgroundColor];
+    }
     self.title = @"应用商店";
+    
+    // 分类选择器容器
+    UIView *segmentContainer = [[UIView alloc] init];
+    if (@available(iOS 13.0, *)) {
+        segmentContainer.backgroundColor = [UIColor secondarySystemGroupedBackgroundColor];
+    } else {
+        segmentContainer.backgroundColor = [UIColor whiteColor];
+    }
+    segmentContainer.layer.cornerRadius = 12;
+    segmentContainer.layer.shadowColor = [UIColor blackColor].CGColor;
+    segmentContainer.layer.shadowOffset = CGSizeMake(0, 2);
+    segmentContainer.layer.shadowRadius = 4;
+    segmentContainer.layer.shadowOpacity = 0.1;
+    [self.view addSubview:segmentContainer];
     
     // 分类选择器
     self.categorySegment = [[UISegmentedControl alloc] init];
+    if (@available(iOS 13.0, *)) {
+        self.categorySegment.selectedSegmentTintColor = [UIColor systemBlueColor];
+        self.categorySegment.backgroundColor = [UIColor clearColor];
+        [self.categorySegment setTitleTextAttributes:@{NSForegroundColorAttributeName: [UIColor labelColor]} forState:UIControlStateNormal];
+        [self.categorySegment setTitleTextAttributes:@{NSForegroundColorAttributeName: [UIColor whiteColor]} forState:UIControlStateSelected];
+    } else {
+        self.categorySegment.tintColor = [UIColor systemBlueColor];
+    }
     [self.categorySegment addTarget:self action:@selector(categoryChanged:) forControlEvents:UIControlEventValueChanged];
-    [self.view addSubview:self.categorySegment];
+    [segmentContainer addSubview:self.categorySegment];
+    
+    [segmentContainer mas_makeConstraints:^(MASConstraintMaker *make) {
+        if (@available(iOS 11.0, *)) {
+            make.top.equalTo(self.view.mas_safeAreaLayoutGuideTop).offset(16);
+        } else {
+            make.top.equalTo(self.view).offset(80); // 导航栏高度 + 间距
+        }
+        make.left.right.equalTo(self.view).inset(16);
+    }];
+    
     [self.categorySegment mas_makeConstraints:^(MASConstraintMaker *make) {
-        make.top.equalTo(self.view.mas_safeAreaLayoutGuideTop).offset(10);
-        make.left.right.equalTo(self.view).inset(15);
+        make.edges.equalTo(segmentContainer).inset(12);
         make.height.mas_equalTo(32);
     }];
     
     // 应用列表
-    self.tableView = [[UITableView alloc] init];
+    self.tableView = [[UITableView alloc] initWithFrame:CGRectZero style:UITableViewStyleGrouped];
     self.tableView.dataSource = self;
     self.tableView.delegate = self;
+    if (@available(iOS 13.0, *)) {
+        self.tableView.backgroundColor = [UIColor systemGroupedBackgroundColor];
+    } else {
+        self.tableView.backgroundColor = [UIColor groupTableViewBackgroundColor];
+    }
     self.tableView.separatorStyle = UITableViewCellSeparatorStyleSingleLine;
+    self.tableView.separatorInset = UIEdgeInsetsMake(0, 67, 0, 0); // 对齐图标
     [self.tableView registerClass:[UITableViewCell class] forCellReuseIdentifier:@"AppCell"];
     [self.view addSubview:self.tableView];
     [self.tableView mas_makeConstraints:^(MASConstraintMaker *make) {
-        make.top.equalTo(self.categorySegment.mas_bottom).offset(10);
+        make.top.equalTo(segmentContainer.mas_bottom).offset(16);
         make.left.right.bottom.equalTo(self.view);
     }];
 }
@@ -144,6 +186,13 @@
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"AppCell" forIndexPath:indexPath];
     
+    // 设置cell背景色
+    if (@available(iOS 13.0, *)) {
+        cell.backgroundColor = [UIColor secondarySystemGroupedBackgroundColor];
+    } else {
+        cell.backgroundColor = [UIColor whiteColor];
+    }
+    
     // 移除之前的子视图（除了系统默认的）
     for (UIView *view in cell.contentView.subviews) {
         if (view.tag >= 1000) {
@@ -158,27 +207,50 @@
     iconView.tag = 1000;
     iconView.contentMode = UIViewContentModeScaleAspectFill;
     iconView.clipsToBounds = YES;
-    iconView.layer.cornerRadius = 8;
+    iconView.layer.cornerRadius = 12; // 更大的圆角，符合App Store风格
+    iconView.layer.borderWidth = 0.5;
+    if (@available(iOS 13.0, *)) {
+        iconView.layer.borderColor = [UIColor tertiaryLabelColor].CGColor;
+    } else {
+        iconView.layer.borderColor = [UIColor lightGrayColor].CGColor;
+    }
+    
+    // 添加轻微阴影
+    iconView.layer.shadowColor = [UIColor blackColor].CGColor;
+    iconView.layer.shadowOffset = CGSizeMake(0, 1);
+    iconView.layer.shadowRadius = 2;
+    iconView.layer.shadowOpacity = 0.1;
+    
     [iconView sd_setImageWithURL:[NSURL URLWithString:app.icon]];
     [cell.contentView addSubview:iconView];
     [iconView mas_makeConstraints:^(MASConstraintMaker *make) {
-        make.left.equalTo(cell.contentView).offset(15);
+        make.left.equalTo(cell.contentView).offset(16);
         make.centerY.equalTo(cell.contentView);
-        make.size.mas_equalTo(CGSizeMake(40, 40));
+        make.size.mas_equalTo(CGSizeMake(50, 50)); // 稍大的图标
     }];
     
     // 应用信息
     UILabel *nameLabel = [[UILabel alloc] init];
     nameLabel.tag = 1001;
     nameLabel.text = app.name;
-    nameLabel.font = [UIFont systemFontOfSize:16];
-    nameLabel.textColor = [UIColor blackColor];
+    if (@available(iOS 13.0, *)) {
+        nameLabel.font = [UIFont preferredFontForTextStyle:UIFontTextStyleBody];
+        nameLabel.textColor = [UIColor labelColor];
+    } else {
+        nameLabel.font = [UIFont systemFontOfSize:16];
+        nameLabel.textColor = [UIColor blackColor];
+    }
     
     UILabel *descLabel = [[UILabel alloc] init];
     descLabel.tag = 1002;
     descLabel.text = app.appDescription;
-    descLabel.font = [UIFont systemFontOfSize:12];
-    descLabel.textColor = [UIColor grayColor];
+    if (@available(iOS 13.0, *)) {
+        descLabel.font = [UIFont preferredFontForTextStyle:UIFontTextStyleCaption1];
+        descLabel.textColor = [UIColor secondaryLabelColor];
+    } else {
+        descLabel.font = [UIFont systemFontOfSize:12];
+        descLabel.textColor = [UIColor grayColor];
+    }
     descLabel.numberOfLines = 2;
     
     UIStackView *infoStack = [[UIStackView alloc] initWithArrangedSubviews:@[nameLabel, descLabel]];
@@ -189,34 +261,46 @@
     [infoStack mas_makeConstraints:^(MASConstraintMaker *make) {
         make.left.equalTo(iconView.mas_right).offset(12);
         make.centerY.equalTo(cell.contentView);
-        make.right.equalTo(cell.contentView).offset(-80);
+        make.right.equalTo(cell.contentView).offset(-90);
     }];
     
     // 添加/已添加按钮
     UIButton *toggleButton = [UIButton buttonWithType:UIButtonTypeCustom];
     toggleButton.tag = 1004;
-    toggleButton.titleLabel.font = [UIFont systemFontOfSize:14];
-    toggleButton.layer.cornerRadius = 15;
-    toggleButton.layer.borderWidth = 1;
+    if (@available(iOS 13.0, *)) {
+        toggleButton.titleLabel.font = [UIFont preferredFontForTextStyle:UIFontTextStyleCallout];
+    } else {
+        toggleButton.titleLabel.font = [UIFont systemFontOfSize:14];
+    }
+    toggleButton.layer.cornerRadius = 16;
     [toggleButton addTarget:self action:@selector(toggleButtonTapped:) forControlEvents:UIControlEventTouchUpInside];
     
     if (app.isAdded) {
         [toggleButton setTitle:@"已添加" forState:UIControlStateNormal];
-        [toggleButton setTitleColor:[UIColor grayColor] forState:UIControlStateNormal];
-        toggleButton.backgroundColor = [UIColor lightGrayColor];
-        toggleButton.layer.borderColor = [UIColor lightGrayColor].CGColor;
+        if (@available(iOS 13.0, *)) {
+            [toggleButton setTitleColor:[UIColor secondaryLabelColor] forState:UIControlStateNormal];
+            toggleButton.backgroundColor = [UIColor tertiarySystemFillColor];
+        } else {
+            [toggleButton setTitleColor:[UIColor grayColor] forState:UIControlStateNormal];
+            toggleButton.backgroundColor = [UIColor lightGrayColor];
+        }
     } else {
         [toggleButton setTitle:@"添加" forState:UIControlStateNormal];
         [toggleButton setTitleColor:[UIColor systemBlueColor] forState:UIControlStateNormal];
-        toggleButton.backgroundColor = [UIColor clearColor];
-        toggleButton.layer.borderColor = [UIColor systemBlueColor].CGColor;
+        if (@available(iOS 13.0, *)) {
+            toggleButton.backgroundColor = [UIColor systemBlueColor];
+            [toggleButton setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+        } else {
+            toggleButton.backgroundColor = [UIColor systemBlueColor];
+            [toggleButton setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+        }
     }
     
     [cell.contentView addSubview:toggleButton];
     [toggleButton mas_makeConstraints:^(MASConstraintMaker *make) {
-        make.right.equalTo(cell.contentView).offset(-15);
+        make.right.equalTo(cell.contentView).offset(-16);
         make.centerY.equalTo(cell.contentView);
-        make.size.mas_equalTo(CGSizeMake(60, 30));
+        make.size.mas_equalTo(CGSizeMake(70, 32));
     }];
     
     // 设置按钮tag为行号，方便点击处理
@@ -229,7 +313,7 @@
 #pragma mark - UITableViewDelegate
 
 - (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath {
-    return 70;
+    return 80; // 增加行高以适应更大的图标
 }
 
 @end 

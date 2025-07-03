@@ -48,11 +48,21 @@
     
     UIViewController * vcInstall = [[vc alloc] init];
     //VC.view.backgroundColor = UIColor.whiteColor;
-    vcInstall.tabBarItem.title = title;
-    vcInstall.tabBarItem.image = [[UIImage imageNamed:image]imageWithRenderingMode:UIImageRenderingModeAlwaysOriginal];
-    vcInstall.tabBarItem.selectedImage = [[UIImage imageNamed:selectImage]imageWithRenderingMode:UIImageRenderingModeAlwaysOriginal];
-    vcInstall.tabBarItem.imageInsets = UIEdgeInsetsMake(6, 0, -6, 0);
-    [self addChildViewController:vcInstall];
+    
+    // 为工作台VC添加导航控制器
+    UIViewController *finalVC;
+    if ([vc isEqual:[WKWorkplaceVC class]]) {
+        UINavigationController *navController = [[UINavigationController alloc] initWithRootViewController:vcInstall];
+        finalVC = navController;
+    } else {
+        finalVC = vcInstall;
+    }
+    
+    finalVC.tabBarItem.title = title;
+    finalVC.tabBarItem.image = [[UIImage imageNamed:image]imageWithRenderingMode:UIImageRenderingModeAlwaysOriginal];
+    finalVC.tabBarItem.selectedImage = [[UIImage imageNamed:selectImage]imageWithRenderingMode:UIImageRenderingModeAlwaysOriginal];
+    finalVC.tabBarItem.imageInsets = UIEdgeInsetsMake(6, 0, -6, 0);
+    [self addChildViewController:finalVC];
 }
 
 

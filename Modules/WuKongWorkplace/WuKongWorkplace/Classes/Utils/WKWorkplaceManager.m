@@ -14,6 +14,17 @@
 #import <UIKit/UIKit.h>
 #import <PromiseKit/PromiseKit.h>
 
+// 为WKWebViewVC添加关闭方法的分类
+@interface WKWebViewVC (CloseButton)
+- (void)closeButtonTapped;
+@end
+
+@implementation WKWebViewVC (CloseButton)
+- (void)closeButtonTapped {
+    [self dismissViewControllerAnimated:YES completion:nil];
+}
+@end
+
 @implementation WKWorkplaceManager
 
 + (instancetype)sharedManager {
@@ -28,15 +39,28 @@
 #pragma mark - 首页数据
 
 - (AnyPromise *)loadHomeData {
-    // 先获取应用数据，横幅数据暂时返回空数组（可后续扩展）
+    // 先获取应用数据，然后获取横幅数据
     return [[WKWorkplaceAPI sharedInstance] getUserApps].then(^(NSArray *apps) {
-        // 可以在这里添加获取横幅的逻辑
-        // 暂时返回空横幅数组
-        NSArray *banners = @[];
-        
+        // 获取横幅数据
+        return [[WKWorkplaceAPI sharedInstance] getBanners].then(^(NSArray *banners) {
+            return @{
+                @"banners": banners ?: @[],
+                @"apps": apps ?: @[]
+            };
+        }).catch(^(NSError *error) {
+            // 横幅获取失败时，至少返回应用数据
+            NSLog(@"获取横幅数据失败: %@", error.localizedDescription);
+            return @{
+                @"banners": @[],
+                @"apps": apps ?: @[]
+            };
+        });
+    }).catch(^(NSError *error) {
+        // 如果连应用数据都获取失败，返回空数据
+        NSLog(@"加载工作台数据失败: %@", error.localizedDescription);
         return @{
-            @"banners": banners,
-            @"apps": apps ?: @[]
+            @"banners": @[],
+            @"apps": @[]
         };
     });
 }
@@ -111,10 +135,29 @@
     NSLog(@"Opening native route: %@", route);
 }
 
-- (void)openWebRoute:(NSString *)route {
-    // TODO: 实现网页跳转
-    // 这里需要根据您的网页展示方式实现
-    NSLog(@"Opening web route: %@", route);
+- (void)openWebRoute:(NSString *)route fromViewController:(UIViewController *)viewController {
+    NSLog(@"Opening web route from VC %@: %@", viewController, route);
+    
+    // 使用内嵌WebView而不是系统浏览器
+    WKWebViewVC *webVC = [[WKWebViewVC alloc] init];
+    webVC.url = [NSURL URLWithString:route];
+    webVC.title = @""; // 标题会从网页自动获取
+    
+    // 通过导航控制器推入WebView
+    if (viewController.navigationController) {
+        [viewController.navigationController pushViewController:webVC animated:YES];
+    } else {
+        // 如果当前控制器没有导航控制器，创建一个新的导航控制器
+        UINavigationController *navController = [[UINavigationController alloc] initWithRootViewController:webVC];
+        navController.modalPresentationStyle = UIModalPresentationFullScreen;
+        [viewController presentViewController:navController animated:YES completion:nil];
+        
+        // 添加关闭按钮
+        UIBarButtonItem *closeButton = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemDone 
+                                                                                      target:webVC 
+                                                                                      action:@selector(closeButtonTapped)];
+        webVC.navigationItem.leftBarButtonItem = closeButton;
+    }
 }
 
 #pragma mark - 数据获取便捷方法
@@ -208,24 +251,26 @@
                                                       userInfo:@{@"route": route, @"viewController": viewController}];
 }
 
-- (void)openWebRoute:(NSString *)route fromViewController:(UIViewController *)viewController {
-    // TODO: 实现网页跳转（带视图控制器）
-    NSLog(@"Opening web route from VC %@: %@", viewController, route);
-    
-    // 示例：可以使用Safari或者内置WebView
-    if (@available(iOS 9.0, *)) {
-        NSURL *url = [NSURL URLWithString:route];
-        if (url && [[UIApplication sharedApplication] canOpenURL:url]) {
-            [[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
-        }
-    }
-}
-
 - (void)openWebURL:(NSString *)urlString fromViewController:(UIViewController *)viewController {
-    // 使用系统浏览器打开
-    NSURL *url = [NSURL URLWithString:urlString];
-    if (url) {
-        [[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
+    // 使用内嵌WebView而不是系统浏览器
+    WKWebViewVC *webVC = [[WKWebViewVC alloc] init];
+    webVC.url = [NSURL URLWithString:urlString];
+    webVC.title = @""; // 标题会从网页自动获取
+    
+    // 通过导航控制器推入WebView
+    if (viewController.navigationController) {
+        [viewController.navigationController pushViewController:webVC animated:YES];
+    } else {
+        // 如果当前控制器没有导航控制器，创建一个新的导航控制器
+        UINavigationController *navController = [[UINavigationController alloc] initWithRootViewController:webVC];
+        navController.modalPresentationStyle = UIModalPresentationFullScreen;
+        [viewController presentViewController:navController animated:YES completion:nil];
+        
+        // 添加关闭按钮
+        UIBarButtonItem *closeButton = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemDone 
+                                                                                      target:webVC 
+                                                                                      action:@selector(closeButtonTapped)];
+        webVC.navigationItem.leftBarButtonItem = closeButton;
     }
 }
 
