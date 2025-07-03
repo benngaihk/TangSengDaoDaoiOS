@@ -26,6 +26,7 @@
 @property (nonatomic, copy) NSURL* currentUrl; // 当前url地址
 
 @property(nonatomic,strong) UIButton *moreBtn;
+@property(nonatomic,strong) UIButton *closeBtn; // 小程序风格的关闭按钮
 
 @property(nonatomic,assign) CGFloat lastContentOffsetY;
 
@@ -46,7 +47,8 @@
     [self.view addSubview:self.webView];
     [self.view addSubview:self.progressView];
     
-    self.navigationBar.rightView = self.moreBtn;
+    // 小程序风格：使用关闭按钮替代更多按钮
+    self.navigationBar.rightView = self.closeBtn;
     
     self.webViewService.channel = self.channel;
     
@@ -68,10 +70,38 @@
     [request setValue:[WKApp shared].config.langue forHTTPHeaderField:@"Accept-Language"];
     
     [self.webView loadRequest:request];
-    [self.view addSubview:self.bottomView];
     
-    [self showBottomView];
+    // 小程序风格：不显示底部控制栏，让WebView全屏显示
+    // [self.view addSubview:self.bottomView];
+    // [self showBottomView];
+}
+
+- (void)viewWillAppear:(BOOL)animated {
+    [super viewWillAppear:animated];
     
+    // 小程序风格：隐藏底部标签栏
+    if (self.tabBarController) {
+        self.tabBarController.tabBar.hidden = YES;
+    }
+    
+    // 禁用右滑返回手势，避免误触关闭
+    if (self.navigationController) {
+        self.navigationController.interactivePopGestureRecognizer.enabled = NO;
+    }
+}
+
+- (void)viewWillDisappear:(BOOL)animated {
+    [super viewWillDisappear:animated];
+    
+    // 恢复底部标签栏显示
+    if (self.tabBarController) {
+        self.tabBarController.tabBar.hidden = NO;
+    }
+    
+    // 恢复右滑返回手势
+    if (self.navigationController) {
+        self.navigationController.interactivePopGestureRecognizer.enabled = YES;
+    }
 }
 
 - (WKWebViewService *)webViewService {
@@ -92,6 +122,38 @@
         [_moreBtn setTintColor:WKApp.shared.config.navBarButtonColor];
     }
     return _moreBtn;
+}
+
+// 小程序风格的关闭按钮 - 小圆点样式
+- (UIButton *)closeBtn {
+    if(!_closeBtn) {
+        _closeBtn = [[UIButton alloc] initWithFrame:CGRectMake(0, 0, 32, 32)];
+        
+        // 创建小圆点背景 - 适配深色模式
+        UIColor *bgColor;
+        if (WKApp.shared.config.style == WKSystemStyleDark) {
+            bgColor = [UIColor colorWithWhite:1.0 alpha:0.8]; // 深色模式下使用白色半透明
+        } else {
+            bgColor = [UIColor colorWithWhite:0.0 alpha:0.6]; // 浅色模式下使用黑色半透明
+        }
+        _closeBtn.backgroundColor = bgColor;
+        _closeBtn.layer.cornerRadius = 16; // 圆形
+        _closeBtn.layer.masksToBounds = YES;
+        
+        // 添加 X 符号 - 适配深色模式
+        [_closeBtn setTitle:@"✕" forState:UIControlStateNormal];
+        UIColor *textColor = (WKApp.shared.config.style == WKSystemStyleDark) ? [UIColor blackColor] : [UIColor whiteColor];
+        [_closeBtn setTitleColor:textColor forState:UIControlStateNormal];
+        _closeBtn.titleLabel.font = [UIFont systemFontOfSize:16 weight:UIFontWeightMedium];
+        
+        [_closeBtn addTarget:self action:@selector(closePressed) forControlEvents:UIControlEventTouchUpInside];
+        
+        // 添加点击动画效果
+        [_closeBtn addTarget:self action:@selector(closeBtnTouchDown) forControlEvents:UIControlEventTouchDown];
+        [_closeBtn addTarget:self action:@selector(closeBtnTouchUp) forControlEvents:UIControlEventTouchUpInside];
+        [_closeBtn addTarget:self action:@selector(closeBtnTouchUp) forControlEvents:UIControlEventTouchUpOutside];
+    }
+    return _closeBtn;
 }
 
 - (UIView *)bottomView {
@@ -172,6 +234,38 @@
     [sheetView show];
 }
 
+// 小程序风格的关闭按钮点击事件
+- (void)closePressed {
+    // 如果是模态展示，则dismiss
+    if (self.presentingViewController) {
+        [self dismissViewControllerAnimated:YES completion:nil];
+    } 
+    // 如果是push进来的，则pop
+    else if (self.navigationController && self.navigationController.viewControllers.count > 1) {
+        [self.navigationController popViewControllerAnimated:YES];
+    }
+    // 其他情况，尝试dismiss
+    else {
+        [self dismissViewControllerAnimated:YES completion:nil];
+    }
+}
+
+// 关闭按钮按下动画
+- (void)closeBtnTouchDown {
+    [UIView animateWithDuration:0.1 animations:^{
+        self.closeBtn.transform = CGAffineTransformMakeScale(0.9, 0.9);
+        self.closeBtn.alpha = 0.7;
+    }];
+}
+
+// 关闭按钮松开动画
+- (void)closeBtnTouchUp {
+    [UIView animateWithDuration:0.1 animations:^{
+        self.closeBtn.transform = CGAffineTransformIdentity;
+        self.closeBtn.alpha = 1.0;
+    }];
+}
+
 - (void)openURLInSafari
 {
 
@@ -243,7 +337,9 @@
             // iOS 9 兼容性
             configuration.mediaPlaybackRequiresUserAction = NO;
         }
-        _webView = [[WKWebView alloc] initWithFrame:CGRectMake(0.0f, self.navigationBar.lim_bottom, self.view.lim_width, self.view.lim_height - self.navigationBar.lim_bottom) configuration:configuration];
+        // 小程序风格：WebView全屏显示（隐藏了底部标签栏）
+        CGFloat webViewHeight = self.view.lim_height - self.navigationBar.lim_bottom;
+        _webView = [[WKWebView alloc] initWithFrame:CGRectMake(0.0f, self.navigationBar.lim_bottom, self.view.lim_width, webViewHeight) configuration:configuration];
         _webView.UIDelegate = self;
         _webView.navigationDelegate = self;
         _webView.scrollView.delegate = self;
@@ -297,6 +393,11 @@
 - (void)dealloc
 {
     [self.webView removeObserver:self forKeyPath:@"estimatedProgress"];
+    
+    // 确保在对象销毁时恢复右滑手势（安全措施）
+    if (self.navigationController) {
+        self.navigationController.interactivePopGestureRecognizer.enabled = YES;
+    }
 }
 
 
@@ -497,8 +598,8 @@
 }
 
 -(void) resetWebViewHeight {
-//    CGFloat safeBottom = self.view.window.safeAreaInsets.bottom;
-    self.webView.lim_height = self.bottomView.lim_top - self.navigationBar.lim_bottom;
+    // 小程序风格：WebView全屏显示，不需要考虑底部控制栏
+    self.webView.lim_height = self.view.lim_height - self.navigationBar.lim_bottom;
 }
 
 - (void)scrollViewDidEndDecelerating:(UIScrollView *)scrollView {

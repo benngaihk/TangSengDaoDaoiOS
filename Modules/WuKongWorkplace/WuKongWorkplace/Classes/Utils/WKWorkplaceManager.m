@@ -14,16 +14,7 @@
 #import <UIKit/UIKit.h>
 #import <PromiseKit/PromiseKit.h>
 
-// 为WKWebViewVC添加关闭方法的分类
-@interface WKWebViewVC (CloseButton)
-- (void)closeButtonTapped;
-@end
-
-@implementation WKWebViewVC (CloseButton)
-- (void)closeButtonTapped {
-    [self dismissViewControllerAnimated:YES completion:nil];
-}
-@end
+// 注释：WKWebViewVC现在已经有了小程序风格的关闭按钮，不需要额外的关闭方法
 
 @implementation WKWorkplaceManager
 
@@ -156,12 +147,12 @@
 - (void)openWebRoute:(NSString *)route fromViewController:(UIViewController *)viewController {
     NSLog(@"Opening web route from VC %@: %@", viewController, route);
     
-    // 使用内嵌WebView，已优化视频播放配置
+    // 使用小程序风格的内嵌WebView（包含右上角关闭按钮、隐藏底部导航栏）
     WKWebViewVC *webVC = [[WKWebViewVC alloc] init];
     webVC.url = [NSURL URLWithString:route];
     webVC.title = @""; // 标题会从网页自动获取
     
-    // 通过导航控制器推入WebView
+    // 通过导航控制器推入WebView（小程序风格会自动隐藏TabBar）
     if (viewController.navigationController) {
         [viewController.navigationController pushViewController:webVC animated:YES];
     } else {
@@ -170,11 +161,7 @@
         navController.modalPresentationStyle = UIModalPresentationFullScreen;
         [viewController presentViewController:navController animated:YES completion:nil];
         
-        // 添加关闭按钮
-        UIBarButtonItem *closeButton = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemDone 
-                                                                                      target:webVC 
-                                                                                      action:@selector(closeButtonTapped)];
-        webVC.navigationItem.leftBarButtonItem = closeButton;
+        // 小程序风格的WebView已经有了右上角关闭按钮，不需要额外添加
     }
 }
 
@@ -270,12 +257,12 @@
 }
 
 - (void)openWebURL:(NSString *)urlString fromViewController:(UIViewController *)viewController {
-    // 使用内嵌WebView，已优化视频播放配置
+    // 使用小程序风格的内嵌WebView（包含右上角关闭按钮、隐藏底部导航栏、视频播放优化）
     WKWebViewVC *webVC = [[WKWebViewVC alloc] init];
     webVC.url = [NSURL URLWithString:urlString];
     webVC.title = @""; // 标题会从网页自动获取
     
-    // 通过导航控制器推入WebView
+    // 通过导航控制器推入WebView（小程序风格会自动隐藏TabBar）
     if (viewController.navigationController) {
         [viewController.navigationController pushViewController:webVC animated:YES];
     } else {
@@ -284,11 +271,7 @@
         navController.modalPresentationStyle = UIModalPresentationFullScreen;
         [viewController presentViewController:navController animated:YES completion:nil];
         
-        // 添加关闭按钮
-        UIBarButtonItem *closeButton = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemDone 
-                                                                                      target:webVC 
-                                                                                      action:@selector(closeButtonTapped)];
-        webVC.navigationItem.leftBarButtonItem = closeButton;
+        // 小程序风格的WebView已经有了右上角关闭按钮，不需要额外添加
     }
 }
 
