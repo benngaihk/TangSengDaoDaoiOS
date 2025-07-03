@@ -231,6 +231,18 @@
 //        preferences.minimumFontSize = 40.0;
         configuration.preferences = preferences;
         configuration.processPool = self.processPool;
+        
+        // 视频播放配置 - 支持内联播放，避免自动全屏
+        configuration.allowsInlineMediaPlayback = YES; // 允许视频内联播放
+        configuration.allowsPictureInPictureMediaPlayback = NO; // 禁用画中画
+        
+        // iOS 10+ 支持更精细的媒体播放控制
+        if (@available(iOS 10.0, *)) {
+            configuration.mediaTypesRequiringUserActionForPlayback = WKAudiovisualMediaTypeNone; // 允许自动播放
+        } else {
+            // iOS 9 兼容性
+            configuration.mediaPlaybackRequiresUserAction = NO;
+        }
         _webView = [[WKWebView alloc] initWithFrame:CGRectMake(0.0f, self.navigationBar.lim_bottom, self.view.lim_width, self.view.lim_height - self.navigationBar.lim_bottom) configuration:configuration];
         _webView.UIDelegate = self;
         _webView.navigationDelegate = self;

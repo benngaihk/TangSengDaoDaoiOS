@@ -116,29 +116,47 @@
 }
 
 - (void)openApp:(WKWorkplaceApp *)app {
-    NSString *route = nil;
+    // 获取当前顶层视图控制器
+    UIViewController *topViewController = [self topViewController];
     
     if (app.jumpType == 1 && app.appRoute.length > 0) {
         // 原生跳转
-        route = app.appRoute;
-        [self openNativeRoute:route];
+        [self openNativeRoute:app.appRoute fromViewController:topViewController];
     } else if (app.webRoute.length > 0) {
         // 网页跳转
-        route = app.webRoute;
-        [self openWebRoute:route];
+        [self openWebURL:app.webRoute fromViewController:topViewController];
     }
 }
 
-- (void)openNativeRoute:(NSString *)route {
-    // TODO: 实现原生路由跳转
-    // 这里需要根据您的路由系统实现
-    NSLog(@"Opening native route: %@", route);
+// 获取当前顶层视图控制器的工具方法
+- (UIViewController *)topViewController {
+    UIViewController *topController = [UIApplication sharedApplication].keyWindow.rootViewController;
+    while (topController.presentedViewController) {
+        topController = topController.presentedViewController;
+    }
+    
+    if ([topController isKindOfClass:[UINavigationController class]]) {
+        UINavigationController *navController = (UINavigationController *)topController;
+        return navController.visibleViewController;
+    } else if ([topController isKindOfClass:[UITabBarController class]]) {
+        UITabBarController *tabController = (UITabBarController *)topController;
+        if ([tabController.selectedViewController isKindOfClass:[UINavigationController class]]) {
+            UINavigationController *navController = (UINavigationController *)tabController.selectedViewController;
+            return navController.visibleViewController;
+        } else {
+            return tabController.selectedViewController;
+        }
+    }
+    
+    return topController;
 }
+
+
 
 - (void)openWebRoute:(NSString *)route fromViewController:(UIViewController *)viewController {
     NSLog(@"Opening web route from VC %@: %@", viewController, route);
     
-    // 使用内嵌WebView而不是系统浏览器
+    // 使用内嵌WebView，已优化视频播放配置
     WKWebViewVC *webVC = [[WKWebViewVC alloc] init];
     webVC.url = [NSURL URLWithString:route];
     webVC.title = @""; // 标题会从网页自动获取
@@ -252,7 +270,7 @@
 }
 
 - (void)openWebURL:(NSString *)urlString fromViewController:(UIViewController *)viewController {
-    // 使用内嵌WebView而不是系统浏览器
+    // 使用内嵌WebView，已优化视频播放配置
     WKWebViewVC *webVC = [[WKWebViewVC alloc] init];
     webVC.url = [NSURL URLWithString:urlString];
     webVC.title = @""; // 标题会从网页自动获取
@@ -273,5 +291,7 @@
         webVC.navigationItem.leftBarButtonItem = closeButton;
     }
 }
+
+
 
 @end 
