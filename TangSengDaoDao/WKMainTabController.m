@@ -39,7 +39,7 @@
    
     [self setupChildVC:WKConversationListVC.class title:@"" andImage:@"HomeTab" andSelectImage:@"HomeTabSelected"];
     [self setupChildVC:WKContactsVC.class title:@"" andImage:@"ContactsTab" andSelectImage:@"ContactsTabSelected"];
-    [self setupChildVC:WKWorkplaceVC.class title:@"" andImage:@"ContactsTab" andSelectImage:@"ContactsTabSelected"];
+    [self setupChildVC:WKWorkplaceVC.class title:@"" andImage:@"WorkTab" andSelectImage:@"WorkTabSelected"];
     [self setupChildVC:WKMeVC.class title:@"" andImage:@"MeTab" andSelectImage:@"MeTabSelected"];
 
 }
