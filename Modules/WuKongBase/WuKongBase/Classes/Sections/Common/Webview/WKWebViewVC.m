@@ -38,20 +38,150 @@
 
 @property(nonatomic,strong) WKWebViewService *webViewService;
 
+@property(nonatomic,assign) BOOL isFromCache; // 标记是否来自缓存
+
+@end
+
+// WebView缓存管理器 - 使用类扩展实现
+@interface WKWebViewCache : NSObject
+
+// 单例方法
++ (instancetype)sharedCache;
+
+// 根据URL获取缓存的WebView控制器
+- (WKWebViewVC *)webViewControllerForURL:(NSURL *)url;
+
+// 缓存WebView控制器
+- (void)cacheWebViewController:(WKWebViewVC *)viewController forURL:(NSURL *)url;
+
+// 清除所有缓存
+- (void)clearCache;
+
+@end
+
+@implementation WKWebViewCache {
+    NSMutableDictionary<NSString *, WKWebViewVC *> *_cache; // URL字符串 -> WebView控制器
+}
+
+// 单例实现
++ (instancetype)sharedCache {
+    static WKWebViewCache *_sharedCache = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        _sharedCache = [[self alloc] init];
+    });
+    return _sharedCache;
+}
+
+- (instancetype)init {
+    self = [super init];
+    if (self) {
+        _cache = [NSMutableDictionary dictionary];
+    }
+    return self;
+}
+
+- (WKWebViewVC *)webViewControllerForURL:(NSURL *)url {
+    if (!url) return nil;
+    
+    NSString *urlString = url.absoluteString;
+    return _cache[urlString];
+}
+
+- (void)cacheWebViewController:(WKWebViewVC *)viewController forURL:(NSURL *)url {
+    if (!url || !viewController) return;
+    
+    NSString *urlString = url.absoluteString;
+    _cache[urlString] = viewController;
+}
+
+- (void)clearCache {
+    [_cache removeAllObjects];
+}
+
 @end
 
 @implementation WKWebViewVC
 
+#pragma mark - WebView缓存方法
+
+// 使用缓存创建WebViewVC
++ (instancetype)cachedWebViewWithURL:(NSURL *)url {
+    // 尝试从缓存获取
+    WKWebViewVC *cachedVC = [[WKWebViewCache sharedCache] webViewControllerForURL:url];
+    
+    if (cachedVC) {
+        // 已有缓存，标记为缓存复用并返回
+        cachedVC.isFromCache = YES;
+        NSLog(@"🔄 WebView cache hit for URL: %@", url);
+        return cachedVC;
+    } else {
+        // 无缓存，创建新实例
+        NSLog(@"✅ Creating new WebView for URL: %@", url);
+        WKWebViewVC *newVC = [[WKWebViewVC alloc] init];
+        newVC.url = url;
+        newVC.isFromCache = NO;
+        
+        // 添加到缓存
+        [[WKWebViewCache sharedCache] cacheWebViewController:newVC forURL:url];
+        
+        return newVC;
+    }
+}
+
+// 清除所有WebView缓存
++ (void)clearWebViewCache {
+    [[WKWebViewCache sharedCache] clearCache];
+    NSLog(@"🗑️ WebView cache cleared");
+}
+
 - (void)viewDidLoad {
     [super viewDidLoad];
-    [self.view addSubview:self.webView];
-    [self.view addSubview:self.progressView];
     
-    // 小程序风格：使用关闭按钮替代更多按钮
-    self.navigationBar.rightView = self.closeBtn;
+    // 设置UI和导航栏样式
+    [self setupNavigationUI];
     
     self.webViewService.channel = self.channel;
     
+    // 如果不是从缓存中加载，则初始化WebView和加载内容
+    if (!self.isFromCache) {
+        [self.view addSubview:self.webView];
+        [self.view addSubview:self.progressView];
+        [self loadWebContent];
+    } else {
+        // 从缓存加载时，只需确保WebView仍添加到视图层级中
+        if (self.webView.superview == nil) {
+            [self.view addSubview:self.webView];
+            [self.view addSubview:self.progressView];
+        }
+        
+        // 更新WebView布局
+        [self resetWebViewHeight];
+        
+        NSLog(@"🔄 Using cached WebView for URL: %@", self.url);
+    }
+}
+
+// 设置导航栏UI
+- (void)setupNavigationUI {
+    // 小程序风格：使用关闭按钮替代更多按钮
+    // 确保关闭按钮正确放在右侧导航栏位置
+    UIBarButtonItem *rightBarButton = [[UIBarButtonItem alloc] initWithCustomView:self.closeBtn];
+    self.navigationItem.rightBarButtonItem = rightBarButton;
+    
+    // 确保标题正确显示
+    if (!self.title || [self.title isEqualToString:@""]) {
+        self.title = @"唐僧叨叨"; // 默认使用应用名称
+    }
+    
+    // 小程序风格：隐藏返回按钮
+    [self.navigationItem setHidesBackButton:YES];
+    self.navigationItem.leftBarButtonItem = nil;
+    self.navigationItem.leftBarButtonItems = nil;
+}
+
+// 加载Web内容
+- (void)loadWebContent {
     NSString *url = self.url.absoluteString;
     
     url = [url stringByRemovingPercentEncoding];
@@ -62,7 +192,6 @@
     
     self.currentUrl = [NSURL URLWithString:url];
     
-    
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:url]
         cachePolicy:NSURLRequestReloadIgnoringCacheData
     timeoutInterval:(NSTimeInterval)10.0];
@@ -70,10 +199,6 @@
     [request setValue:[WKApp shared].config.langue forHTTPHeaderField:@"Accept-Language"];
     
     [self.webView loadRequest:request];
-    
-    // 小程序风格：不显示底部控制栏，让WebView全屏显示
-    // [self.view addSubview:self.bottomView];
-    // [self showBottomView];
 }
 
 - (void)viewWillAppear:(BOOL)animated {
@@ -87,6 +212,20 @@
     // 禁用右滑返回手势，避免误触关闭
     if (self.navigationController) {
         self.navigationController.interactivePopGestureRecognizer.enabled = NO;
+        
+        // 小程序风格：隐藏左上角返回按钮（多种方式配合确保隐藏）
+        [self.navigationItem setHidesBackButton:YES animated:NO];
+        self.navigationItem.leftBarButtonItem = nil;
+        self.navigationItem.leftBarButtonItems = nil;
+        self.navigationController.navigationBar.backIndicatorImage = [UIImage new];
+        self.navigationController.navigationBar.backIndicatorTransitionMaskImage = [UIImage new];
+        
+        // 设置一个空的返回按钮文字，进一步防止返回按钮显示
+        UIBarButtonItem *backButton = [[UIBarButtonItem alloc] initWithTitle:@"" 
+                                                                      style:UIBarButtonItemStylePlain
+                                                                     target:nil 
+                                                                     action:nil];
+        self.navigationItem.backBarButtonItem = backButton;
     }
 }
 
@@ -127,24 +266,31 @@
 // 小程序风格的关闭按钮 - 小圆点样式
 - (UIButton *)closeBtn {
     if(!_closeBtn) {
-        _closeBtn = [[UIButton alloc] initWithFrame:CGRectMake(0, 0, 32, 32)];
+        // 使用更大尺寸，增加可点击面积，更容易看到和点击
+        _closeBtn = [[UIButton alloc] initWithFrame:CGRectMake(0, 0, 36, 36)];
         
         // 创建小圆点背景 - 适配深色模式
         UIColor *bgColor;
         if (WKApp.shared.config.style == WKSystemStyleDark) {
             bgColor = [UIColor colorWithWhite:1.0 alpha:0.8]; // 深色模式下使用白色半透明
         } else {
-            bgColor = [UIColor colorWithWhite:0.0 alpha:0.6]; // 浅色模式下使用黑色半透明
+            bgColor = [UIColor colorWithWhite:0.0 alpha:0.7]; // 浅色模式下使用黑色半透明，颜色稍深
         }
         _closeBtn.backgroundColor = bgColor;
-        _closeBtn.layer.cornerRadius = 16; // 圆形
+        _closeBtn.layer.cornerRadius = 18; // 圆形
         _closeBtn.layer.masksToBounds = YES;
         
-        // 添加 X 符号 - 适配深色模式
+        // 添加更明显的 X 符号 - 适配深色模式
         [_closeBtn setTitle:@"✕" forState:UIControlStateNormal];
         UIColor *textColor = (WKApp.shared.config.style == WKSystemStyleDark) ? [UIColor blackColor] : [UIColor whiteColor];
         [_closeBtn setTitleColor:textColor forState:UIControlStateNormal];
-        _closeBtn.titleLabel.font = [UIFont systemFontOfSize:16 weight:UIFontWeightMedium];
+        _closeBtn.titleLabel.font = [UIFont systemFontOfSize:17 weight:UIFontWeightMedium];
+        
+        // 添加阴影效果，让按钮更突出
+        _closeBtn.layer.shadowColor = [UIColor blackColor].CGColor;
+        _closeBtn.layer.shadowOffset = CGSizeMake(0, 1);
+        _closeBtn.layer.shadowOpacity = 0.3;
+        _closeBtn.layer.shadowRadius = 3;
         
         [_closeBtn addTarget:self action:@selector(closePressed) forControlEvents:UIControlEventTouchUpInside];
         

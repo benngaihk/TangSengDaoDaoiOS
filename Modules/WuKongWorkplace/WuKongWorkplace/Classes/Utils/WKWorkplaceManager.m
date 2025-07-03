@@ -14,7 +14,21 @@
 #import <UIKit/UIKit.h>
 #import <PromiseKit/PromiseKit.h>
 
-// 注释：WKWebViewVC现在已经有了小程序风格的关闭按钮，不需要额外的关闭方法
+// 为导航控制器添加隐藏返回按钮的扩展方法
+@interface UINavigationController (HideBackButton)
+- (void)hideBackButtonForMiniProgramStyle;
+@end
+
+@implementation UINavigationController (HideBackButton)
+- (void)hideBackButtonForMiniProgramStyle {
+    // 隐藏所有返回按钮
+    self.navigationBar.backIndicatorImage = [UIImage new];
+    self.navigationBar.backIndicatorTransitionMaskImage = [UIImage new];
+    self.topViewController.navigationItem.hidesBackButton = YES;
+    self.topViewController.navigationItem.leftBarButtonItem = nil;
+    self.topViewController.navigationItem.leftBarButtonItems = nil;
+}
+@end
 
 @implementation WKWorkplaceManager
 
@@ -147,21 +161,25 @@
 - (void)openWebRoute:(NSString *)route fromViewController:(UIViewController *)viewController {
     NSLog(@"Opening web route from VC %@: %@", viewController, route);
     
-    // 使用小程序风格的内嵌WebView（包含右上角关闭按钮、隐藏底部导航栏）
-    WKWebViewVC *webVC = [[WKWebViewVC alloc] init];
-    webVC.url = [NSURL URLWithString:route];
-    webVC.title = @""; // 标题会从网页自动获取
+    // 使用缓存机制创建WebView，相同URL不会重复加载
+    NSURL *url = [NSURL URLWithString:route];
+    WKWebViewVC *webVC = [WKWebViewVC cachedWebViewWithURL:url];
+    webVC.title = @"唐僧叨叨"; // 使用应用名称作为标题
     
     // 通过导航控制器推入WebView（小程序风格会自动隐藏TabBar）
     if (viewController.navigationController) {
         [viewController.navigationController pushViewController:webVC animated:YES];
+        // 使用扩展方法隐藏返回按钮
+        [viewController.navigationController hideBackButtonForMiniProgramStyle];
     } else {
         // 如果当前控制器没有导航控制器，创建一个新的导航控制器
         UINavigationController *navController = [[UINavigationController alloc] initWithRootViewController:webVC];
         navController.modalPresentationStyle = UIModalPresentationFullScreen;
-        [viewController presentViewController:navController animated:YES completion:nil];
         
-        // 小程序风格的WebView已经有了右上角关闭按钮，不需要额外添加
+        // 使用扩展方法隐藏返回按钮
+        [navController hideBackButtonForMiniProgramStyle];
+        
+        [viewController presentViewController:navController animated:YES completion:nil];
     }
 }
 
@@ -257,21 +275,25 @@
 }
 
 - (void)openWebURL:(NSString *)urlString fromViewController:(UIViewController *)viewController {
-    // 使用小程序风格的内嵌WebView（包含右上角关闭按钮、隐藏底部导航栏、视频播放优化）
-    WKWebViewVC *webVC = [[WKWebViewVC alloc] init];
-    webVC.url = [NSURL URLWithString:urlString];
-    webVC.title = @""; // 标题会从网页自动获取
+    // 使用缓存机制创建WebView，相同URL不会重复加载
+    NSURL *url = [NSURL URLWithString:urlString];
+    WKWebViewVC *webVC = [WKWebViewVC cachedWebViewWithURL:url];
+    webVC.title = @"唐僧叨叨"; // 使用应用名称作为标题
     
     // 通过导航控制器推入WebView（小程序风格会自动隐藏TabBar）
     if (viewController.navigationController) {
         [viewController.navigationController pushViewController:webVC animated:YES];
+        // 使用扩展方法隐藏返回按钮
+        [viewController.navigationController hideBackButtonForMiniProgramStyle];
     } else {
         // 如果当前控制器没有导航控制器，创建一个新的导航控制器
         UINavigationController *navController = [[UINavigationController alloc] initWithRootViewController:webVC];
         navController.modalPresentationStyle = UIModalPresentationFullScreen;
-        [viewController presentViewController:navController animated:YES completion:nil];
         
-        // 小程序风格的WebView已经有了右上角关闭按钮，不需要额外添加
+        // 使用扩展方法隐藏返回按钮
+        [navController hideBackButtonForMiniProgramStyle];
+        
+        [viewController presentViewController:navController animated:YES completion:nil];
     }
 }
 
